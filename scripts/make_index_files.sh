@@ -1,5 +1,5 @@
-data_path="/ssd/dataset/histology/converted"
-all_sources="nct lc25000 crc-tp breakhis"
+data_path="/home/guests2/apa/datasets_converted"
+all_sources="breakhis"
 
 for source in ${all_sources}
 do
