@@ -6,7 +6,7 @@ DATA:
   test_sources: ['breakhis'] # Which dataset to use
   train_transforms: ['random_resized_crop', 'random_flip', 'jitter', 'to_tensor', 'normalize']
   test_transforms: ['resize', 'center_crop', 'to_tensor', 'normalize'] #Transforms applied to training data
-  data_path: '/ssd/dataset/histology/converted/'
+  data_path: '/home/guests2/apa/datasets_converted'
   ckpt_path: 'checkpoints'
   res_path: 'results'
   shuffle: True
