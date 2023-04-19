@@ -1,5 +1,5 @@
 data_path="/home/guests2/apa/datasets_converted"
-all_sources="breakhis"
+all_sources="breakhis lung_colon_image_set nct_dataset"
 
 for source in ${all_sources}
 do
