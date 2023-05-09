@@ -3,7 +3,7 @@ train=$2
 valid=$3
 test=$4
 
-seeds="[2021]"
+seeds="[1,2,3]"
 train="['$train']"
 valid="['$valid']"
 test="['$test']"
