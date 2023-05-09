@@ -8,7 +8,7 @@ visu="False"
 base_config_path="config/base.yaml"
 method_config_path="config/${method}.yaml"
 
-seeds="[1,2,3]"
+seeds="[2021]"
 train="['$train']"
 valid="['nct']"
 test="['$test']"
