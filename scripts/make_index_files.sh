@@ -1,5 +1,5 @@
 data_path="/home/guests2/apa/datasets_converted"
-all_sources="Fold1"
+all_sources="breakhis"
 
 for source in ${all_sources}
 do
