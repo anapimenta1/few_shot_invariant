@@ -1,11 +1,12 @@
 method=$1
 train=$2
 train2=$3
-test=$4
+valid=$4
+test=$5
 
 seeds="[2021]"
 train="['$train', '$train2']"
-valid="[]"
+valid="['$valid']"
 test="['$test']"
 
 base_config_path="config/base.yaml"
