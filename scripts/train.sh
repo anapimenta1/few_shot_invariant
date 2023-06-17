@@ -5,7 +5,7 @@ valid=$4
 test=$5
 
 seeds="[2021]"
-train="[$train', '$train2]"
+train="[$train, $train2]"
 valid="['$valid']"
 test="['$test']"
 
