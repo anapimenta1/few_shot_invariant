@@ -1,11 +1,11 @@
 method=$1
-train1="crc-tp"
-train2="nct"
-test="lc25000"  # Choose the desired test dataset
+train=$2
+valid=$3
+test=$4
 
 seeds="[2021]"
-train="['$train1', '$train2']"
-valid="[]"  # You can specify validation sources if needed
+train="['$train']"
+valid="['$valid']"
 test="['$test']"
 
 base_config_path="config/base.yaml"
@@ -16,4 +16,4 @@ python3 -m src.train --base_config ${base_config_path} \
                      --opts train_sources ${train} \
                             seeds ${seeds} \
                             val_sources ${valid} \
-                            test_sources ${test}
+                            test_sources ${test} \
