@@ -1,5 +1,5 @@
 data_path="/home/guests2/apa/datasets_converted"
-all_sources="crc_nct_combined"
+all_sources="lc25000"
 
 for source in ${all_sources}
 do
