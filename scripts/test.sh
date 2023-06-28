@@ -10,7 +10,7 @@ method_config_path="config/${method}.yaml"
 
 seeds="[2021]"
 train="['$train']"
-valid="['crc-tp']"
+valid="['nct']"
 test="['$test']"
 
 python3 -m src.test --base_config ${base_config_path} \
