@@ -1,7 +1,8 @@
 method=$1
 shot=$2
 train=$3
-test=$4
+valid=$4
+test=$5
 
 visu="False"
 
@@ -10,7 +11,7 @@ method_config_path="config/${method}.yaml"
 
 seeds="[2021]"
 train="['$train']"
-valid="['nct']"
+valid="['$valid']"
 test="['$test']"
 
 python3 -m src.test --base_config ${base_config_path} \
