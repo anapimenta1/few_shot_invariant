@@ -14,7 +14,7 @@ DATA:
 MODEL:
   arch: 'resnet18'
   use_fc: True
-  pretrained: True
+  pretrained: False
 
 TRAINING:
   seeds: [1,2,3]
