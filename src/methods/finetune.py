@@ -90,6 +90,7 @@ class Finetune(FSmethod):
             #                  y_q=y_q,
             #                  y_s=y_s)
 
+        
         # Define optimizer
         if self.finetune_all_layers:
             params = list(model.parameters()) + list(classifier.parameters())
@@ -106,19 +107,21 @@ class Finetune(FSmethod):
                 z_q = F.normalize(z_q, dim=-1)
 
         for i in range(1, self.iter):
-            probs_s = classifier(z_s[0]).softmax(-1)
-            loss = - (y_s_one_hot * probs_s.log()).sum(-1).mean(-1)
+            # Euclidean distances between query and supports sets
+            z_s_expand = z_s.unsqueeze(1)  # shape: [n_task, 1, s_shot, feature_dim]
+            z_q_expand = z_q.unsqueeze(2) # shape: [n_task, q_shot, 1, feature_dim]
+            distances = torch.sum((z_q_expand - z_s_expand) ** 2, dim=-1)  # shape: [n_task, q_shot, s_shot]
+            euclidean_distances = torch.sqrt(distances)  # shape: [n_task, q_shot, s_shot]
+
+            # Calculate the mean distance for each query sample and its corresponding support samples
+            mean_distances = euclidean_distances.mean(dim=-1)  # shape: [n_task, q_shot]
+
+            # Add the IFL term to the loss
+            ifl_loss = mean_distances.mean()
+            loss = - (y_s_one_hot * probs_s.log()).sum(-1).mean(-1) + ifl_loss
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
-            # with torch.no_grad():
-                # preds_q = classifier(z_q[0]).argmax(-1)
-                # self.record_info(iteration=i,
-                #                  task_ids=task_ids,
-                #                  preds_q=preds_q,
-                #                  probs_s=probs_s,
-                #                  y_q=y_q,
-                #                  y_s=y_s)
 
         probs_q = classifier(z_q[0]).softmax(-1).unsqueeze(0)
         return loss.detach(), probs_q.detach().argmax(2)
