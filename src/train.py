@@ -168,7 +168,7 @@ def main(args):
             support, support_labels = support.to(device), support_labels.to(device, non_blocking=True)
             query, target = query.to(device), target.to(device, non_blocking=True)
 
-            loss, preds_q, distances = method(x_s=support,
+            loss, preds_q = method(x_s=support,
                                    x_q=query,
                                    y_s=support_labels,
                                    y_q=target,
