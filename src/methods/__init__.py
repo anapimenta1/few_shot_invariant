@@ -5,3 +5,5 @@ from .maml import *
 from .tim import *
 from .finetune import *
 from .metaoptnet import *
+from .finetune_ifl_01 import *
+from .finetune_ifl_1 import *

@@ -8,7 +8,7 @@ from .utils import get_one_hot, extract_features
 from .method import FSmethod
 
 
-class Finetune(FSmethod):
+class Finetune_IFL_01(FSmethod):
 
     def __init__(self,
                  args: argparse.Namespace):
@@ -104,10 +104,14 @@ class Finetune(FSmethod):
             if self.normalize:
                 z_s = F.normalize(z_s, dim=-1)
                 z_q = F.normalize(z_q, dim=-1)
-
+            
         for i in range(1, self.iter):
+            distances = torch.norm(z_s.unsqueeze(2) - z_q.unsqueeze(1), dim=-1)
             probs_s = classifier(z_s[0]).softmax(-1)
-            loss = - (y_s_one_hot * probs_s.log()).sum(-1).mean(-1)
+            erm_loss = - (y_s_one_hot * probs_s.log()).sum(-1).mean(-1)
+            ifl_loss = distances.mean() # mean of distances? sum?
+            lambda_value = 0.1 # change for different lambda values
+            loss = erm_loss + lambda_value*ifl_loss
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
@@ -122,3 +126,6 @@ class Finetune(FSmethod):
 
         probs_q = classifier(z_q[0]).softmax(-1).unsqueeze(0)
         return loss.detach(), probs_q.detach().argmax(2)
+
+        
+

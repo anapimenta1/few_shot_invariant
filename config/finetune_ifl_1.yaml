@@ -1,0 +1,7 @@
+METHOD:
+  method: 'Finetune_IFL_1'
+  episodic_training: False
+  iter: 200
+  finetune_lr: 0.1
+  finetune_all_layers: True
+  normalize: True
