@@ -101,8 +101,14 @@ def main(args):
     print(f"=> Using {args.method} method")
 
     # ============ Data loaders =========
-    train_loader, num_classes = get_dataloader(args=args,
-                                               sources=args.train_sources,
+    train_loader_1, num_classes_1 = get_dataloader(args=args,
+                                               sources=args.train_source_1,
+                                               episodic=args.episodic_training,
+                                               batch_size=args.batch_size,
+                                               split=Split["TRAIN"])
+    
+    train_loader_2, num_classes_2 = get_dataloader(args=args,
+                                               sources=args.train_source_2,
                                                episodic=args.episodic_training,
                                                batch_size=args.batch_size,
                                                split=Split["TRAIN"])
@@ -121,22 +127,22 @@ def main(args):
 
     #  If you want to get the total number of classes (i.e from combined datasets)
     if not args.episodic_training:
-        loss_fn = all_losses[args.loss](args=args, num_classes=num_classes, reduction='none')
-
-    print(f"=> There are {num_classes} classes in the train datasets")
+        loss_fn_1 = all_losses[args.loss](args=args, num_classes=num_classes_1, reduction='none')
+        loss_fn_2 = all_losses[args.loss](args=args, num_classes=num_classes_2, reduction='none')
+    print(f"=> There are {num_classes_1} classes in the train dataset 1")
+    print(f"=> There are {num_classes_2} classes in the train dataset 2")
     print(f"=> There are {num_classes_val} classes in the validation datasets")
     print(f"=> There are {num_classes_test} classes in the test datasets")
 
     # ============ Model and optim ================
-    if 'MAML' in args.method:
-        print(f"Meta {args.arch} loaded")
-        model = meta_dict[args.arch](pretrained=args.pretrained, num_classes=args.num_ways)
-    else:
-        print(f"Standard {args.arch} loaded")
-        model = standard_dict[args.arch](pretrained=args.pretrained, num_classes=num_classes)
+    print(f"Standard {args.arch} loaded")
+    model_1 = standard_dict[args.arch](pretrained=args.pretrained, num_classes=num_classes_1)
+    model_1= model_1.to(device)
 
-    model = model.to(device)
-    optimizer = Adam(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
+    model_2 = standard_dict[args.arch](pretrained=args.pretrained, num_classes=num_classes_2)
+    model_2= model_2.to(device)
+
+    optimizer = Adam(model_1.parameters(), lr=args.lr, weight_decay=args.weight_decay)
     scheduler = CosineAnnealingLR(optimizer, args.train_iter, eta_min=1e-9)
 
     # ============ Prepare metrics ================
@@ -153,10 +159,11 @@ def main(args):
     best_val_acc = 0.
 
     # ============ Training loop ============
-    model.train()
-    tqdm_bar = tqdm(train_loader, total=args.train_iter, ascii=True)
+    model_1.train()
+    model_2.train()
+    tqdm_bar = tqdm(zip(train_loader_1, train_loader_2), total=args.train_iter, ascii=True)
     i = 0
-    for data in tqdm_bar:
+    for (data_1, data_2) in tqdm_bar:
 
         if i >= args.train_iter:
             break
@@ -164,34 +171,61 @@ def main(args):
         # ============ Make a training iteration ============
         t0 = time.time()
         if args.episodic_training:
-            support, query, support_labels, target = data
+            support, query, support_labels, target = data_1
             support, support_labels = support.to(device), support_labels.to(device, non_blocking=True)
-            query, target = query.to(device), target.to(device, non_blocking=True)
 
-            loss, preds_q = method(x_s=support,
+            support_2, query_2, support_labels_2, target_2 = data_2
+            support_2, support_labels_2 = support_2.to(device), support_labels_2.to(device, non_blocking=True)
+
+
+            query, target = query.to(device), target.to(device, non_blocking=True)
+            query_2, target_2 = query_2.to(device), target_2.to(device, non_blocking=True)
+
+            loss_1, preds_q = method(x_s=support,
                                    x_q=query,
                                    y_s=support_labels,
                                    y_q=target,
-                                   model=model)  # [batch, q_shot]
-        else:
-            (input_, target) = data
-            input_, target = input_.to(device), target.to(device, non_blocking=True).long()
-            loss = loss_fn(input_, target, model)
+                                   model=model_1)  # [batch, q_shot]
+            
+            loss_2, preds_q_2 = method(x_s=support_2,
+                                   x_q=query_2,
+                                   y_s=support_labels_2,
+                                   y_q=target_2,
+                                   model=model_2)  # [batch, q_shot]
+            
 
-            model.eval()
+        else:
+            (input_, target) = data_1
+            (input_2, target_2) = data_2
+
+            input_, target = input_.to(device), target.to(device, non_blocking=True).long()
+            input_2, target_2 = input_2.to(device), target_2.to(device, non_blocking=True).long()
+
+            loss_1 = loss_fn_1(input_, target, model_1)
+            loss_2 = loss_fn_2(input_2, target_2, model_2)
+
+            model_1.eval()
+            model_2.eval()
             with torch.no_grad():
-                preds_q = model(input_).softmax(-1).argmax(-1)
-            model.train()
+                preds_q = model_1(input_).softmax(-1).argmax(-1)
+                preds_q_2 = model_2(input_2).softmax(-1).argmax(-1)
+            model_1.train()
+            model_2.train()
+        
+        ##### UNCOMMENT FOR PENALTY####
+        #penalty = torch.nn.functional.l1_loss(preds_q.float(), preds_q_2.float())
+        penalty = 0
+        total_loss = loss_1 + loss_2 + 0.1 * penalty
 
         # Perform optim
         optimizer.zero_grad()
-        loss.mean().backward()
+        total_loss.mean().backward()
         optimizer.step()
         if scheduler:
             scheduler.step()
 
         # Log metrics
-        train_loss.update(loss.mean().detach(), i == 0)
+        train_loss.update(loss_1.mean().detach(), i == 0)
         train_acc.update((preds_q == target).float().mean(), i == 0)
         batch_time.update(time.time() - t0, i == 0)
 
@@ -209,11 +243,11 @@ def main(args):
 
         # ============ Evaluation ============
         if i % args.val_freq == 0:
-            evaluate(i, val_loader, model, method, model_dir, metrics, best_val_acc, device)
+            evaluate(i, val_loader, model_1, method, model_dir, metrics, best_val_acc, device)
 
         # ============ Testing ============
         if i % args.val_freq == 0:
-            test(i, test_loader, model, method, model_dir, metrics, best_val_acc, device)
+            test(i, test_loader, model_1, method, model_dir, metrics, best_val_acc, device)
 
             for k, e in metrics.items():
                 metrics_path = os.path.join(model_dir, f"{k}.npy")

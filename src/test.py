@@ -17,7 +17,6 @@ from .train import get_dataloader
 
 
 def parse_args() -> argparse.Namespace:
-
     parser = argparse.ArgumentParser(description='Testing')
     parser.add_argument('--base_config', type=str, required=True, help='Base config file')
     parser.add_argument('--method_config', type=str, default=True, help='Base config file')
@@ -46,8 +45,14 @@ def main(args):
     for seed in args.seeds:
         args.seed = seed
         # ============ Data loaders =========
-        _, num_classes_tr = get_dataloader(args=args,
-                                           sources=args.train_sources,
+        _, num_classes_tr_1 = get_dataloader(args=args,
+                                           sources=args.train_source_1,
+                                           episodic=args.episodic_training,
+                                           batch_size=args.batch_size,
+                                           split=Split["TRAIN"])
+        
+        _, num_classes_tr_2 = get_dataloader(args=args,
+                                           sources=args.train_source_2,
                                            episodic=args.episodic_training,
                                            batch_size=args.batch_size,
                                            split=Split["TRAIN"])
@@ -65,18 +70,24 @@ def main(args):
             model = meta_dict[args.arch](pretrained=args.pretrained, num_classes=args.num_ways)
         else:
             print(f"Standard {args.arch} loaded")
-            model = standard_dict[args.arch](pretrained=args.pretrained, num_classes=num_classes_tr)
-        load_checkpoint(model, model_dir, type='best')
-        model = model.to(device)
+            model_1 = standard_dict[args.arch](pretrained=args.pretrained, num_classes=num_classes_tr_1)
+            model_2 = standard_dict[args.arch](pretrained=args.pretrained, num_classes=num_classes_tr_2)
+
+        load_checkpoint(model_1, model_dir, type='best')
+        #load_checkpoint(model_2, model_dir, type='best')
+        model_1 = model_1.to(device)
+        model_2 = model_2.to(device)
 
         # ============ Training loop ============
-        model.eval()
+        model_1.eval()
+        model_2.eval()
         method.eval()
         print(f'Starting testing for seed {seed}')
         test_acc = 0.
         test_loss = 0.
         predictions = []
         tqdm_bar = tqdm(test_loader, total=args.test_iter)
+        
         i = 0
         for data in tqdm_bar:
             support, query, support_labels, query_labels = data
@@ -85,7 +96,7 @@ def main(args):
 
             if args.method == 'MAML':  # MAML uses transductive batchnorm, whic corrupts the model
                 blockPrint()
-                load_checkpoint(model, model_dir, type='best')
+                load_checkpoint(model_1, model_dir, type='best')
                 enablePrint()
 
             # ============ Evaluation ============
@@ -93,7 +104,14 @@ def main(args):
                                         x_q=query,
                                         y_s=support_labels,
                                         y_q=query_labels,
-                                        model=model)
+                                        model=model_1)
+
+            loss_2, preds_q_2 = method(x_s=support,
+                                        x_q=query,
+                                        y_s=support_labels,
+                                        y_q=query_labels,
+                                        model=model_2)
+
             if args.visu and i % 100 == 0:
                 task_id = 0
                 root = os.path.join(model_dir, 'visu', 'test')

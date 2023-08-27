@@ -1,10 +1,12 @@
 method=$1
-train=$2
-valid=$3
-test=$4
+train1=$2
+train2=$3
+valid=$4
+test=$5
 
 seeds="[2021]"
-train="['$train']"
+train1="['$train1']"
+train2="['$train2']"
 valid="['$valid']"
 test="['$test']"
 
@@ -13,7 +15,8 @@ method_config_path="config/${method}.yaml"
 
 python3 -m src.train --base_config ${base_config_path} \
                      --method_config ${method_config_path} \
-                     --opts train_sources ${train} \
+                     --opts train_source_1 ${train1} \
+                            train_source_2 ${train2} \
                             seeds ${seeds} \
                             val_sources ${valid} \
                             test_sources ${test} \

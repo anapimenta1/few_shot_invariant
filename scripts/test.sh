@@ -1,8 +1,9 @@
 method=$1
 shot=$2
-train=$3
-valid=$4
-test=$5
+train1=$3
+train2=$4
+valid=$5
+test=$6
 
 
 visu="False"
@@ -11,14 +12,16 @@ base_config_path="config/base.yaml"
 method_config_path="config/${method}.yaml"
 
 seeds="[2021]"
-train="['$train']"
+train1="['$train1']"
+train2="['$train2']"
 valid="['$valid']"
 test="['$test']"
 
 python3 -m src.test --base_config ${base_config_path} \
                     --method_config ${method_config_path} \
                     --opts num_support ${shot} \
-                           train_sources ${train} \
+                           train_source_1 ${train1} \
+                           train_source_2 ${train2} \
                            seeds ${seeds} \
                            visu ${visu} \
                            val_sources ${valid} \

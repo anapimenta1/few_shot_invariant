@@ -156,7 +156,8 @@ class AverageMeter(object):
 
 def get_model_dir(args: argparse.Namespace, seed: int):
     model_type = args.method #if args.episodic_training else 'standard' #-- LOSS IFL
-    train = "train={}".format('_'.join(args.train_sources))
+    training_sources_combined = args.train_source_1 + args.train_source_2
+    train = "train={}".format('_'.join(training_sources_combined))
     valid = "valid={}".format('_'.join(args.val_sources))
     return os.path.join(args.ckpt_path,
                         train,

@@ -1,8 +1,9 @@
 
 DATA:
   image_size: 84 # Images will be resized to this value
-  train_sources: ['crc-tp'] # Which dataset to use
-  val_sources: ['lc25000'] # Which dataset to use
+  train_source_1: ['crc-tp'] # Which dataset to use
+  train_source_2: ['nct']
+  val_sources: ['lc25000']
   test_sources: ['breakhis'] # Which dataset to use
   train_transforms: ['random_resized_crop', 'random_flip', 'jitter', 'to_tensor', 'normalize']
   test_transforms: ['resize', 'center_crop', 'to_tensor', 'normalize'] #Transforms applied to training data
@@ -34,7 +35,7 @@ VALIDATION:
 TEST:
   test_batch_size: 1
   test_iter: 1000
-  simu_params: ['train_sources', 'val_sources', 'test_sources', 'arch', 'image_size', 'pretrained', 'num_support', 'seed']
+  simu_params: ['train_source_1', 'train_source_2', 'val_sources', 'test_sources', 'arch', 'image_size', 'pretrained', 'num_support', 'seed']
 
 
 AUGMENTATIONS:
